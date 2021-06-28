@@ -21,8 +21,10 @@
         - 시스템 보안을 강화한다
             - 인가된 요청인지를 확인하는 작업을 application service 에서 하는게 좋다
         - DB 트랜잭션 제어
-            - application service method 가 하나의 트랜잭션을 형성해야 한다
-        - business logic을 포함하지 않는다. 단지 business operation 을 조정할 뿐이다
+            - application service method 가 하나의 트랜잭션을 형성해야 한다(성공시 commit, 실패시 rollback)
+            - 같은 트랜잭션이 여러개의 application service에 걸쳐 있다면, domain service로의 분리도 생각해볼 필요가 있다
+        - orchestration
+            - business logic을 포함하지 않는다. 단지 business operation 을 조정할 뿐이다
         
         
          
