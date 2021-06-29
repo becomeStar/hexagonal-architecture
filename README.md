@@ -52,8 +52,13 @@
                 - client가 aggregate를 비일관된 상태로 만들거나 허용되지 않는 작업을 수행할 수 없도록 해야 한다
             - Data Transfer Objects
                 - application service가 DTO 와 domain model 간의 변환을 담당한다
-                - domain model에 business logic이 많을때, aggregate가 복잡할 때,  
+                - domain model에 business logic이 많을때, aggregate가 복잡할 때, domain model에 많은 변경이 일어날 때 사용하면 좋다
+                - client와 도메인 모델이 decoupling 되는 장점이 있다
+                - 실제로 필요한 데이터만 client와 application service간에 전달되어 성능이 향상된다
+                - DTO와 aggregate를 변환하는 작업이 번거로운 점이 단점이다
             - Domain Payload Objects
+                - 
+                - aggregate 와  DTO의 조합
         
          
     
