@@ -57,12 +57,7 @@
                 - 실제로 필요한 데이터만 client와 application service간에 전달되어 성능이 향상된다
                 - DTO와 aggregate를 변환하는 작업이 번거로운 점이 단점이다  
             - Domain Payload Objects
-                - aggregate와 DTO의 조합 
-                
-    
-        
-
-
+                - aggregate와 DTO의 조합
         
          
     
