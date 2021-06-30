@@ -58,6 +58,7 @@
                 - DTO와 aggregate를 변환하는 작업이 번거로운 점이 단점이다  
             - Domain Payload Objects
                 - aggregate와 DTO의 조합
+                - aggregate의 크기가 작고 여러개의 aggregate를 다뤄야 할때 유리하다
         
          
     
