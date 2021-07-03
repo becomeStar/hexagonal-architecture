@@ -1,7 +1,7 @@
 # hexagonal-architecture
 
 
-- 전통적인 layered architecture 와 hexagonal architecture와의 비교
+- layered architecture 와 hexagonal architecture와의 비교
 - layered architecture 
     - ![layered_architecture](./image/layered_architecture.png)
     - 상위 레이어는 하위 레이어와 상호 작용할 수 있지만 반대 방향으로는 상호 작용할 수 없음
@@ -55,13 +55,67 @@
                 - domain model에 business logic이 많을때, aggregate가 복잡할 때, domain model에 많은 변경이 일어날 때 사용하면 좋다
                 - client와 도메인 모델이 decoupling 되는 장점이 있다
                 - 실제로 필요한 데이터만 client와 application service간에 전달되어 성능이 향상된다
-                - DTO와 aggregate를 변환하는 작업이 번거로운 점이 단점이다
+                - DTO와 aggregate를 변환하는 작업이 번거로운 점이 단점이다  
             - Domain Payload Objects
-                - 
-                - aggregate 와  DTO의 조합
+                - aggregate와 DTO의 조합(DPO 내에 여러개의 domain object 가 있는 형태)              
+                - aggregate의 크기가 작고 여러개의 aggregate를 다뤄야 할때 유리하다
+            
+    - Input Validation
+        - aggregate 를 일관된 상태로 유지하기 위해서는 aggregate를 변경시키는 입력에 대한 검증이 필요하다 
+        - hexagonal architecture 에서는 user interface 에서 validation 을 수행하는것이 적합하지 않다
+            - user interface 는 system 에 대한 많은 entry point중 하나이기 때문이다
+        - format validation 과 content validation 의 2가지 종류가 있다
+            - format validation : 값이 특정 패턴을 만족시키는지를 검사
+                - value object 를 검증할 때 보통 생성자에서 값을 검증한다 
+                - entity 를 검증할때
+                    - 생성자나 팩토리, 세터(setter)에서 값을 검증하거나(domain model이 복잡할때)
+                    - Java Bean Validation 을 사용한다(domain model이 단순할때)
+                        
+            - content validation : 특정 패턴을 만족시키는 값이 유효한지를 검사(ex. 인증)
+                - 간단한 경우에는 format validation 처럼 생성자 내에서 validate를 할 수 있다
+                - 조회 목록에 특정한 값이 존재하는지를 체크해야 하는 경우, application service 에서 체크를 수행해야 한다
+                - aggregate 전체를 검증해야 할 경우, domain service에서 검증을 수행하고
+                  application service는 domain service를 호출하는 식으로 검증한다 
+                  
+    - application service 의 크기가 중요한가?
+        - application service 의 크기를 작게 유지하는 것이 좋다
+        - 큰 application service를 작게 분할할 때는 각각이 응집도가 높아지도록 분할해야 한다
+            - 비즈니스 로직 1개당 application service 1개
+        - application service 의 네이밍을 할때, 수행하는 일에 따라 구체적으로 정하는 것이 좋다
+            - EmployeeService (x), EmployeeCrudService (o), EmploymentContractTerminationUsecase (o)                  
+            - 꼭 Service 라는 접미사를 붙일 필요가 없다 (ex. Usecase, Orchestrator)
+        - command based application service 는 application service 를 하나의 command로 본다
+            - 모든 application service는 한개의 command를 수행하는, 단 한개의 메소드를 갖는다(다형성 이용)
+            - application service가 자연스럽게 분할되는 효과를 갖는다(사이즈를 작게 유지)            
+
+    - Ports and Adapters
+        - port 란 무엇인가? 
+            - 특정한 목적을 위한 시스템과 외부 세계와의 인터페이스
+            - client가 시스템에 접근하기 위한 창구이자 시스템이 외부 시스템으로 접근하기 위한 창구
+            - 특정 기술에 구애받지 않는 응용 프로그래밍 인터페이스 (API) 
+            - ![hexagonal_architecture](./image/hexagonal_architecture.png)
+            - 내부 육각형의 각 측면이 포트이고 바깥쪽 육각형과의 사이 공간에 adapter 를 위치시킬수 있다     
         
-         
-    
-    
-    
-    
+        - adapter 란 무엇인가?
+            - adapter 는 특정한 기술을(web browser, mobile device, hardware device 등)
+              사용하여 포트를 이용해 상호작용을 가능하게 한다
+            - 한개의 port 에 여러개의 adapter 가 존재할 수 있다
+            - 여러개의 port에 한개의 adapter 가 존재할 수 있다  
+        
+        - port와 adapter 의 코드 구현
+            - port 는 코드에서 주로 interface 로 표현된다
+            - 외부에서 시스템으로 접근할 때, port 구현체는 application service 가 된다
+                - ![adapter_1](./image/adapter_1.png)
+                - (REST 통신 방식일 때, adapter 는 controller)
+                - adapter 가 인터페이스(port, application service)를 사용한다
+                   
+            - 내부에서 외부 시스템으로 접근할 때, port 구현체는 adapter가 된다
+                - application service 또는 domain model에 있는  adapter 를 사용하여 외부와 통신한다
+                - 인터페이스(port)가 application service 또는 domain model 내부에 있는 구조이다
+                
+            - 인터페이스 쪽으로 의존성이 생기는 구조
+            - application service와 adapter 가 decoupling 된다    
+
+    - Multiple Bounded Contexts
+        - 서로 통신해야 하는 여러개의 bounded context 가 있을 때
+        
