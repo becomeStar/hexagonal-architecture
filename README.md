@@ -110,6 +110,7 @@
                 - adapter 가 인터페이스(port, application service)를 사용한다
                    
             - 내부에서 외부 시스템으로 접근할 때, port 구현체는 adapter가 된다
+                - ![adapter_2](./image/adapter_2.png)
                 - application service 또는 domain model에 있는  adapter 를 사용하여 외부와 통신한다
                 - 인터페이스(port)가 application service 또는 domain model 내부에 있는 구조이다
                 
@@ -118,4 +119,10 @@
 
     - Multiple Bounded Contexts
         - 서로 통신해야 하는 여러개의 bounded context 가 있을 때
-        
+            - 두개의 bounded context 가 분리되어 있어 서로 REST 통신할 때
+                - ![multiple_bounded_context_1](./image/multiple_bounded_context_1.png)
+                - upstream(server) 과 downstream(client) 각각에 adapter 가 필요하다
+            - 두개의 bounded context 가 하나의 monolithic system 안에 존재할 때 
+                - ![multiple_bounded_context_2](./image/multiple_bounded_context_2.png)
+                - 1개의 adapter 가 필요하다
+                - adapter 는 downstream context 의 port 를 구현하고 upstream context의 port 를 호출한다
