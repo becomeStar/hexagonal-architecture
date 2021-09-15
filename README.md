@@ -1,28 +1,31 @@
 # hexagonal-architecture
 
-
-- layered architecture 와 hexagonal architecture와의 비교
 - layered architecture 
     - ![layered_architecture](./image/layered_architecture.png)
     - 상위 레이어는 하위 레이어와 상호 작용할 수 있지만 반대 방향으로는 상호 작용할 수 없음
     - application layer와 domain layer 는 hexagonal architecture 와 동일한 역할을 함
-    - UI layer와 database layer 는 hexagonal architecture 의 동작 방식과 차이가 있음 
-
+    - UI layer와 database layer 는 hexagonal architecture 의 동작 방식과 다르다
+        - UI layer : input adapter
+        - database layer : output adapter
+    
 - hexagonal architecture
     - ![hexagonal_architecture](./image/hexagonal_architecture.png)    
     - domain model
-        -  모든 비즈니스 결정이 이루어지는 비즈니스 로직이있는 곳
-        -  비즈니스 자체가 변경되지 않는 한, 가장 적게 변경 될 수 있는 소프트웨어의 가장 안정적인 부분
+        - 모든 비즈니스 결정이 이루어지는 비즈니스 로직이있는 곳
+        - 비즈니스 자체가 변경되지 않는 한, 가장 적게 변경 될 수 있는 소프트웨어의 가장 안정적인 부분
         
-    - application service : 클라이언트가 도메인 모델과 상호 작용하는 파사드 역할을 한다
+    - application service : 클라이언트가 도메인 모델과 상호 작용하는 창구(facade) 역할을 한다
         - stateless
             - 클라이언트와 상호작용하면서 변경될 수 있는 상태를 유지하지 않는다
             - operation 을 실행하기 위한 정보는 application service 메소드의 인풋 파라미터로 들어가야 한다 
+            
         - 시스템 보안을 강화한다
-            - 인가된 요청인지를 확인하는 작업을 application service 에서 하는게 좋다
+            - 인가된 요청인지를 확인하는 작업을 application service 에서 담당한다
+        
         - DB 트랜잭션 제어
             - application service method 가 하나의 트랜잭션을 형성해야 한다(성공시 commit, 실패시 rollback)
-            - 같은 트랜잭션이 여러개의 application service에 걸쳐 있다면, domain service로의 분리도 생각해볼 필요가 있다
+            - 같은 트랜잭션이 여러개의 application service에 걸쳐 있다면 domain service로의 분리나 domain event의 사용을 고려해 본다
+          
         - orchestration
             - business logic을 포함하지 않는다. 단지 business operation 을 조정할 뿐이다
                 - ID로 aggregate를 찾고 aggregate의 메소드 호출, aggregate 저장 및 리턴
@@ -34,9 +37,9 @@
     
     - Domain Event Listeners
         - domain event listener는 처음에 이벤트를 발행한 메소드의 결과에 영향을 줄 수 없어야 한다 (*1)
-            - 즉 자신만의 트랜잭션을 가져야 한다
+            - 즉 자신만의 별도의 트랜잭션을 가져야 한다
         - domain listener는 도메인 모델 내부가 아니라 application service 계층에 속한다
-            - domain event에 의해 호출된다
+            - domain event에 의해 호출되는 특별한 application service
             - 어떠한 business logic도 포함하지 않는다
         - 동일한 트랜잭션 내에서 여러 aggregate가 변경될 경우, 도메인 이벤트를 통해 이루어지는것이 좋다
             - (*1) 의 원칙에 위배되지만 꼭 필요한 경우는 원칙에 위배되는 설계도 필요하다
@@ -86,13 +89,51 @@
             - 꼭 Service 라는 접미사를 붙일 필요가 없다 (ex. Usecase, Orchestrator)
         - command based application service 는 application service 를 하나의 command로 본다
             - 모든 application service는 한개의 command를 수행하는, 단 한개의 메소드를 갖는다(다형성 이용)
-            - application service가 자연스럽게 분할되는 효과를 갖는다(사이즈를 작게 유지)            
+            - application service가 자연스럽게 분할되는 효과를 갖는다(사이즈를 작게 유지)           
+            - 코드 예시 
+              ```
+                public interface Command<R> {}
+              
+                public interface CommandHandler<C extends Command<R>, R> { 
+                     R handleCommand(C command);
+                }
+              
+                public class CommandGateway { 
+                     public <C extends Command<R>, R> R handleCommand(C command) {
+                         var handler = commandHandlers.findHandlerFor(command)
+                         .orElseThrow(() -> new IllegalStateException("No command handler found"));
+                         return handler.handleCommand(command);
+                     }
+                }
+                  
+                public class CreateCustomerCommand implements Command<Customer> {
+                     private final String name;
+                     private final PostalAddress address;
+                     private final PhoneNumber phone;
+                     private final EmailAddress email;
+                }
+                 
+                public class CreateCustomerCommandHandler implements CommandHandler<CreateCustomerCommand, Customer> { 
+
+                    @Override
+                    @Transactional
+                    public Customer handleCommand(CreateCustomerCommand command) {
+                        var customer = new Customer();
+                        customer.setName(command.getName());
+                        customer.setAddress(command.getAddress());
+                        customer.setPhone(command.getPhone());
+                        customer.setEmail(command.getEmail());
+                        return customerRepository.save(customer);
+                    }
+                }
+              
+              ```
 
     - Ports and Adapters
         - port 란 무엇인가? 
-            - 특정한 목적을 위한 시스템과 외부 세계와의 인터페이스
-            - client가 시스템에 접근하기 위한 창구이자 시스템이 외부 시스템으로 접근하기 위한 창구
-            - 특정 기술에 구애받지 않는 응용 프로그래밍 인터페이스 (API) 
+            - 특정한 목적의 시스템과 외부 세계와의 인터페이스
+            - client가 시스템에 접근하기 위한 창구(inbound port)이자 시스템이 외부 시스템으로 접근하기 위한 창구(outbound port)
+            - 특정 기술에 종속되지 않는 응용 프로그래밍 인터페이스 (API) 
             - ![hexagonal_architecture](./image/hexagonal_architecture.png)
             - 내부 육각형의 각 측면이 포트이고 바깥쪽 육각형과의 사이 공간에 adapter 를 위치시킬수 있다     
         
@@ -104,23 +145,31 @@
         
         - port와 adapter 의 코드 구현
             - port 는 코드에서 주로 interface 로 표현된다
-            - 외부에서 시스템으로 접근할 때, port 구현체는 application service 가 된다
+            - 외부에서 시스템으로 접근할 때, port 구현체(inbound adapter)는 application service 가 된다
                 - ![adapter_1](./image/adapter_1.png)
                 - (REST 통신 방식일 때, adapter 는 controller)
-                - adapter 가 인터페이스(port, application service)를 사용한다
+                - adapter 가 port(application service)를 사용한다
                    
-            - 내부에서 외부 시스템으로 접근할 때, port 구현체는 adapter가 된다
+            - 내부에서 외부 시스템으로 접근할 때, port 구현체는 outbound adapter가 된다
                 - ![adapter_2](./image/adapter_2.png)
-                - application service 또는 domain model에 있는  adapter 를 사용하여 외부와 통신한다
-                - 인터페이스(port)가 application service 또는 domain model 내부에 있는 구조이다
+                - application service(또는 domain model)이 adapter를 사용하여 외부와 통신한다
                 
             - 인터페이스 쪽으로 의존성이 생기는 구조
-            - application service와 adapter 가 decoupling 된다    
-
+            - application service와 adapter 가 decoupling 된다
+        
+        - inbound adapter(REST) 예시
+            - ![inbound_adapter_1](./image/inbound_adapter_1.png)
+            - REST Controller = inbound adapter
+            - Application Service = inbound port 
+            - protocol을 준수하는 한, client가 누구인지는 상관하지 않는다
+    
+        - outbound adapter(REST) 예시
+            - ![outbound_adapter_1](./image/outbound_adapter_1.png)
+           
     - Multiple Bounded Contexts
         - 서로 통신해야 하는 여러개의 bounded context 가 있을 때
             - 두개의 bounded context 가 분리되어 있어 서로 REST 통신할 때
-                - ![multiple_bounded_context_1](./image/multiple_bounded_context_1.png)
+                - <img src="./image/multiple_bounded_context_1.png" width="50%" height="50%" alt="multiple_bounded_context_1"/>
                 - upstream(server) 과 downstream(client) 각각에 adapter 가 필요하다
             - 두개의 bounded context 가 하나의 monolithic system 안에 존재할 때 
                 - ![multiple_bounded_context_2](./image/multiple_bounded_context_2.png)
